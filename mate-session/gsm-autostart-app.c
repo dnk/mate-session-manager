@@ -280,7 +280,6 @@ setup_gsettings_condition_monitor (GsmAutostartApp *app,
 {
         GSettings *settings;
         char **elems;
-        gboolean schema_exists;
         gboolean retval;
         char *signal;
 
@@ -292,13 +291,15 @@ setup_gsettings_condition_monitor (GsmAutostartApp *app,
                 return FALSE;
         }
 
-        GSettingsSchemaSource *source = g_settings_schema_source_get_default();
-        schema_exists = g_settings_schema_source_lookup(source, elems[0], TRUE) != NULL;
+        GSettingsSchemaSource *schema_source = g_settings_schema_source_get_default();
+        GSettingsSchema *schema = g_settings_schema_source_lookup(schema_source, elems[0], TRUE);
 
-        if (schema_exists == FALSE)
+        if (schema == NULL)
                 return FALSE;
 
-        settings = g_settings_new (elems[0]);
+        settings = g_settings_new_full(schema, NULL, NULL);
+        g_settings_schema_unref(schema);
+
         retval = g_settings_get_boolean (settings, elems[1]);
 
         signal = g_strdup_printf ("changed::%s", elems[1]);
