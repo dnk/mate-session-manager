@@ -39,6 +39,8 @@
 #include <dbus/dbus-glib-bindings.h>
 #include <dbus/dbus-glib-lowlevel.h>
 
+#include <libmate-desktop/mate-gsettings.h>
+
 #include "mdm-signal-handler.h"
 #include "mdm-log.h"
 
@@ -60,6 +62,9 @@
 
 #define ACCESSIBILITY_KEY     "accessibility"
 #define ACCESSIBILITY_SCHEMA  "org.mate.interface"
+
+#define DEBUG_KEY             "mate-session"
+#define DEBUG_SCHEMA          "org.mate.debug"
 
 #define VISUAL_SCHEMA         "org.mate.applications-at-visual"
 #define VISUAL_KEY            "exec"
@@ -524,6 +529,12 @@ static gboolean require_dbus_session(int argc, char** argv, GError** error)
 	return TRUE;
 }
 
+void debug_changed (GSettings *settings, gchar *key, gpointer user_data)
+{
+	debug = g_settings_get_boolean (settings, DEBUG_KEY);
+	mdm_log_set_debug (debug);
+}
+
 int main(int argc, char** argv)
 {
 	struct sigaction sa;
@@ -532,6 +543,7 @@ int main(int argc, char** argv)
 	GsmManager* manager;
 	GsmStore* client_store;
 	GsmXsmpServer* xsmp_server;
+	GSettings* debug_settings = NULL;
 	GSettings* accessibility_settings;
 	MdmSignalHandler* signal_handler;
 	static char** override_autostart_dirs = NULL;
@@ -572,6 +584,14 @@ int main(int argc, char** argv)
 	{
 		g_print("%s %s\n", argv [0], VERSION);
 		exit(1);
+	}
+
+	/* Allows to enable/disable debug from GSettings only if it is not set from argument */
+	if (!debug && mate_gsettings_schema_exists(DEBUG_SCHEMA))
+	{
+		debug_settings = g_settings_new (DEBUG_SCHEMA);
+		debug = g_settings_get_boolean (debug_settings, DEBUG_KEY);
+		g_signal_connect (debug_settings, "changed::" DEBUG_KEY, G_CALLBACK (debug_changed), NULL);
 	}
 
 	mdm_log_init();
@@ -654,6 +674,11 @@ int main(int argc, char** argv)
 	if (client_store != NULL)
 	{
 		g_object_unref(client_store);
+	}
+
+	if (debug_settings != NULL)
+	{
+		g_object_unref(debug_settings);
 	}
 
 	msm_gnome_stop();
