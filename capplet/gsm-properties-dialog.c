@@ -707,8 +707,6 @@ gsm_properties_dialog_constructor (GType                  type,
 
         setup_dialog (dialog);
 
-        gtk_widget_show (GTK_WIDGET (dialog));
-
         return G_OBJECT (dialog);
 }
 
