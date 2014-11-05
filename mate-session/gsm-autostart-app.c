@@ -278,29 +278,33 @@ static gboolean
 setup_gsettings_condition_monitor (GsmAutostartApp *app,
                                    const char      *key)
 {
-        GSettings *settings;
+        GSettingsSchemaSource *source;
+	GSettingsSchema *schema;
+	GSettings *settings;
         char **elems;
-        gboolean retval;
+	gboolean retval = FALSE;
         char *signal;
 
-        elems = g_strsplit (key, " ", 2);
-        if (elems == NULL)
-                return FALSE;
-        if (elems[0] == NULL || elems[1] == NULL) {
-                g_strfreev (elems);
-                return FALSE;
-        }
+        retval = FALSE;
 
-        GSettingsSchemaSource *schema_source = g_settings_schema_source_get_default();
-        GSettingsSchema *schema = g_settings_schema_source_lookup(schema_source, elems[0], TRUE);
+	elems = g_strsplit (key, " ", 2);
+
+        if (elems == NULL)
+                goto out;
+
+        if (elems[0] == NULL || elems[1] == NULL)
+	        goto out;
+
+        source = g_settings_schema_source_get_default ();
+
+        schema = g_settings_schema_source_lookup (source, elems[0], TRUE);
 
         if (schema == NULL)
-                return FALSE;
+	        goto out;
 
-        settings = g_settings_new_full(schema, NULL, NULL);
-        g_settings_schema_unref(schema);
-
+        settings = g_settings_new_full (schema, NULL, NULL);
         retval = g_settings_get_boolean (settings, elems[1]);
+	g_settings_schema_unref (schema);
 
         signal = g_strdup_printf ("changed::%s", elems[1]);
         g_signal_connect (G_OBJECT (settings), signal,
@@ -309,6 +313,7 @@ setup_gsettings_condition_monitor (GsmAutostartApp *app,
 
         app->priv->condition_settings = settings;
 
+out:
         g_strfreev (elems);
 
         return retval;
