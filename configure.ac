@@ -1,4 +1,4 @@
-AC_INIT([mate-session-manager], [1.9.1], [http://www.mate-desktop.org/])
+AC_INIT([mate-session-manager], [1.9.2], [http://www.mate-desktop.org/])
 AC_CONFIG_SRCDIR([mate-session])
 AC_CONFIG_HEADERS([config.h])
 
@@ -50,7 +50,7 @@ GLIB_REQUIRED=2.36.0
 GIO_REQUIRED=2.25.0
 DBUS_GLIB_REQUIRED=0.76
 UPOWER_REQUIRED=0.9.0
-MATE_DESKTOP_REQUIRED=1.9.2
+MATE_DESKTOP_REQUIRED=1.9.3
 
 case "$with_gtk" in
   2.0) GTK_API_VERSION=2.0
@@ -136,7 +136,7 @@ AC_ARG_ENABLE(upower,
               AS_HELP_STRING([--enable-upower],
               [Use upower to suspend/hibernate]),
               enable_upower=$enableval,
-              enable_upower=yes)
+              enable_upower=no)
 if test "x$enable_upower" = "xyes"; then
     PKG_CHECK_MODULES(UPOWER, upower-glib >= $UPOWER_REQUIRED, has_upower=yes, has_upower=no)
 

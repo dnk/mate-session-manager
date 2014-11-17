@@ -499,7 +499,6 @@ gsm_app_dialog_run (GsmAppDialog  *dialog,
                 GError     *error;
                 char      **argv;
                 int         argc;
-                gboolean   UNUSED_VARIABLE changed;
 
                 name = gsm_app_dialog_get_name (GSM_APP_DIALOG (dialog));
                 exec = gsm_app_dialog_get_command (GSM_APP_DIALOG (dialog));
@@ -539,8 +538,6 @@ gsm_app_dialog_run (GsmAppDialog  *dialog,
 
                         continue;
                 }
-
-                changed = FALSE;
 
                 if (gsm_util_text_is_blank (name)) {
                         name = argv[0];

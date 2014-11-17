@@ -524,6 +524,11 @@ get_desktop_file_path (GsmXSMPClient *client)
         /* If we can't get desktop file from GsmDesktopFile then we
          * try to find the desktop file from its program name */
         prop = find_property (client, SmProgram, NULL);
+
+	if (!prop) {
+	        goto out;
+	}
+
         program_name = prop->vals[0].value;
 
         dirs = gsm_util_get_autostart_dirs ();
@@ -546,12 +551,21 @@ static void
 set_desktop_file_keys_from_client (GsmClient *client,
                                    GKeyFile  *keyfile)
 {
-        SmProp *prop;
-        char   *name;
-        char   *comment;
+        SmProp       *prop;
+        const char   *name;
+        char         *comment;
 
         prop = find_property (GSM_XSMP_CLIENT (client), SmProgram, NULL);
-        name = g_strdup (prop->vals[0].value);
+
+        if (prop) {
+                name = prop->vals[0].value;
+        } else {
+            /* It'd be really surprising to reach this code: if we're here,
+             * then the XSMP client already has set several XSMP
+             * properties. But it could still be that SmProgram is not set.
+             */
+            name = _("Remembered Application");
+	}
 
         comment = g_strdup_printf ("Client %s which was automatically saved",
                                    gsm_client_peek_startup_id (client));
@@ -581,7 +595,6 @@ set_desktop_file_keys_from_client (GsmClient *client,
                                 G_KEY_FILE_DESKTOP_KEY_STARTUP_NOTIFY,
                                 TRUE);
 
-        g_free (name);
         g_free (comment);
 }
 
@@ -639,6 +652,7 @@ xsmp_save (GsmClient *client,
 
         desktop_file_path = get_desktop_file_path (GSM_XSMP_CLIENT (client));
 
+        /* this can accept desktop_file_path == NULL */
         keyfile = create_client_key_file (client,
                                           desktop_file_path,
                                           &local_error);
@@ -778,10 +792,12 @@ static char *
 xsmp_get_app_name (GsmClient *client)
 {
         SmProp *prop;
-        char   *name;
+        char   *name = NULL;
 
         prop = find_property (GSM_XSMP_CLIENT (client), SmProgram, NULL);
-        name = prop_to_command (prop);
+        if (prop) {
+	        name = prop_to_command (prop);
+        }
 
         return name;
 }
