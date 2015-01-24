@@ -37,8 +37,12 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
+#include <gio/gio.h>
 
 #include "msm-gnome.h"
+
+#define GSM_SCHEMA "org.mate.session"
+#define GSM_GNOME_COMPAT_STARTUP_KEY "gnome-compat-startup"
 
 #define GNOME_KEYRING_DAEMON "gnome-keyring-daemon"
 
@@ -222,16 +226,35 @@ msm_compat_gnome_smproxy_shutdown (void)
 void
 msm_gnome_start (void)
 {
+  GSettings* settings;
+  gchar **array;
+
   if (gnome_compat_started == TRUE)
     return;
 
-  g_debug ("MsmGnome: starting");
+  settings = g_settings_new (GSM_SCHEMA);
+  array = g_settings_get_strv (settings, GSM_GNOME_COMPAT_STARTUP_KEY);
+  if (array) {
+    guint i;
 
-  msm_compat_gnome_smproxy_startup ();
-
-  gnome_keyring_daemon_startup ();
-
-  gnome_compat_started = TRUE;
+    for (i = 0; array[i]; i++) {
+      if (strcmp (array[i], "smproxy") == 0) {
+        g_debug ("MsmGnome: starting smproxy");
+        msm_compat_gnome_smproxy_startup ();
+        gnome_compat_started = TRUE;
+      } else if (strcmp (array[i], "keyring") == 0) {
+        g_debug ("MsmGnome: starting keyring");
+        gnome_keyring_daemon_startup ();
+        gnome_compat_started = TRUE;
+      } else {
+        g_debug ("MsmGnome: ignoring unknown component \"%s\"", array[i]);
+      }
+    }
+    g_strfreev (array);
+  } else {
+    g_debug ("MsmGnome: No components found to start");
+  }
+  g_object_unref (settings);
 }
 
 
