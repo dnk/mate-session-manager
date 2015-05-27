@@ -529,7 +529,11 @@ gsm_get_dialog (GsmDialogLogoutType type,
                 g_assert_not_reached ();
         }
 
+#if GTK_CHECK_VERSION (3, 0, 0)
+        dialog_image = gtk_image_new_from_icon_name (icon_name, GTK_ICON_SIZE_DIALOG);
+#else
         dialog_image = gtk_message_dialog_get_image (GTK_MESSAGE_DIALOG (logout_dialog));
+#endif
 
 #if GTK_CHECK_VERSION (3, 0, 0)
         hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
