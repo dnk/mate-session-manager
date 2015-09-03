@@ -37,11 +37,6 @@
 
 #define GSM_PROPERTIES_DIALOG_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GSM_TYPE_PROPERTIES_DIALOG, GsmPropertiesDialogPrivate))
 
-#define IS_STRING_EMPTY(x) ((x)==NULL||(x)[0]=='\0')
-
-#define REALLY_IDENTICAL_STRING(a, b)                   \
-        ((a && b && !strcmp (a, b)) || (!a && !b))
-
 #define GTKBUILDER_FILE "session-properties.ui"
 
 #define CAPPLET_TREEVIEW_WIDGET_NAME      "session_properties_treeview"
@@ -80,6 +75,7 @@ enum {
         STORE_COL_GICON,
         STORE_COL_DESCRIPTION,
         STORE_COL_APP,
+        STORE_COL_SEARCH,
         NUMBER_OF_COLUMNS
 };
 
@@ -123,11 +119,13 @@ _fill_iter_from_app (GtkListStore *list_store,
         gboolean    enabled;
         GIcon      *icon;
         const char *description;
+        const char *app_name;
 
         hidden      = gsp_app_get_hidden (app);
         enabled     = gsp_app_get_enabled (app);
         icon        = gsp_app_get_icon (app);
         description = gsp_app_get_description (app);
+        app_name    = gsp_app_get_name (app);
 
         if (G_IS_THEMED_ICON (icon)) {
                 GtkIconTheme       *theme;
@@ -160,6 +158,7 @@ _fill_iter_from_app (GtkListStore *list_store,
                             STORE_COL_GICON, icon,
                             STORE_COL_DESCRIPTION, description,
                             STORE_COL_APP, app,
+                            STORE_COL_SEARCH, app_name,
                             -1);
         g_object_unref (icon);
 }
@@ -522,7 +521,8 @@ setup_dialog (GsmPropertiesDialog *dialog)
                                                        G_TYPE_BOOLEAN,
                                                        G_TYPE_ICON,
                                                        G_TYPE_STRING,
-                                                       G_TYPE_OBJECT);
+                                                       G_TYPE_OBJECT,
+                                                       G_TYPE_STRING);
         tree_filter = gtk_tree_model_filter_new (GTK_TREE_MODEL (dialog->priv->list_store),
                                                  NULL);
         g_object_unref (dialog->priv->list_store);
@@ -589,7 +589,7 @@ setup_dialog (GsmPropertiesDialog *dialog)
 
 
         gtk_tree_view_column_set_sort_column_id (column, STORE_COL_DESCRIPTION);
-        gtk_tree_view_set_search_column (treeview, STORE_COL_DESCRIPTION);
+        gtk_tree_view_set_search_column (treeview, STORE_COL_SEARCH);
 #if !GTK_CHECK_VERSION (3, 14, 0)
         gtk_tree_view_set_rules_hint (treeview, TRUE);
 #endif
@@ -667,17 +667,8 @@ setup_dialog (GsmPropertiesDialog *dialog)
                                                      CAPPLET_REMEMBER_WIDGET_NAME));
         dialog->priv->remember_toggle = button;
 
-        g_signal_connect (dialog->priv->settings,
-                          "changed::" SPC_AUTOSAVE_KEY,
-                          G_CALLBACK (on_autosave_value_notify),
-                          dialog);
-
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button),
-                                      g_settings_get_boolean (dialog->priv->settings, SPC_AUTOSAVE_KEY));
-        g_signal_connect (button,
-                          "toggled",
-                          G_CALLBACK (on_autosave_value_toggled),
-                          dialog);
+        g_settings_bind (dialog->priv->settings, SPC_AUTOSAVE_KEY,
+                         button, "active", G_SETTINGS_BIND_DEFAULT);
 
         button = GTK_WIDGET (gtk_builder_get_object (dialog->priv->xml,
                                                      CAPPLET_SAVE_WIDGET_NAME));
@@ -729,6 +720,11 @@ gsm_properties_dialog_dispose (GObject *object)
         if (dialog->priv->xml != NULL) {
                 g_object_unref (dialog->priv->xml);
                 dialog->priv->xml = NULL;
+        }
+
+        if (dialog->priv->settings != NULL) {
+                g_object_unref (dialog->priv->settings);
+                dialog->priv->settings = NULL;
         }
 
         G_OBJECT_CLASS (gsm_properties_dialog_parent_class)->dispose (object);
