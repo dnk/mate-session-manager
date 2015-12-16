@@ -1,4 +1,4 @@
-AC_INIT([mate-session-manager], [1.12.0], [http://www.mate-desktop.org/])
+AC_INIT([mate-session-manager], [1.12.1], [http://www.mate-desktop.org/])
 AC_CONFIG_SRCDIR([mate-session])
 AC_CONFIG_HEADERS([config.h])
 
@@ -55,7 +55,6 @@ GLIB_REQUIRED=2.36.0
 GIO_REQUIRED=2.25.0
 DBUS_GLIB_REQUIRED=0.76
 UPOWER_REQUIRED=0.9.0
-MATE_DESKTOP_REQUIRED=1.9.3
 
 case "$with_gtk" in
   2.0) GTK_API_VERSION=2.0
@@ -76,7 +75,6 @@ PKG_CHECK_MODULES(MATE_SESSION,
         gio-2.0 >= $GIO_REQUIRED
         gtk+-$GTK_API_VERSION >= $GTK_REQUIRED
         dbus-glib-1 >= $DBUS_GLIB_REQUIRED
-        mate-desktop-$GTK_API_VERSION >= $MATE_DESKTOP_REQUIRED
 )
 
 PKG_CHECK_MODULES(SESSION_PROPERTIES,
@@ -146,13 +144,18 @@ AC_ARG_ENABLE(upower,
               enable_upower=$enableval,
               enable_upower=no)
 if test "x$enable_upower" = "xyes"; then
-    PKG_CHECK_MODULES(UPOWER, upower-glib >= $UPOWER_REQUIRED, has_upower=yes, has_upower=no)
+    PKG_CHECK_MODULES([UPOWER], [upower-glib >= $UPOWER_REQUIRED], has_upower=yes, has_upower=no)
 
     if test "x$has_upower" = "xyes"; then
         AC_DEFINE(HAVE_UPOWER, 1, [upower support])
         AC_SUBST(UPOWER_CFLAGS)
         AC_SUBST(UPOWER_LIBS)
     fi
+    PKG_CHECK_MODULES([UPOWER_HIBERNATE], [upower-glib < 0.99], has_upower_hibernate_suspend=yes, has_upower_hibernate_suspend=no)
+    if test "x$has_upower_hibernate_suspend" = "xyes"; then
+        AC_DEFINE(HAVE_UPOWER_HIBERNATE_SUSPEND, 1, [upower based support for hibernate and suspend (< 0.99)])
+    fi
+
 fi
 AM_CONDITIONAL(HAVE_UPOWER, test "x$has_upower" = "xyes")
 AC_SUBST(HAVE_UPOWER)

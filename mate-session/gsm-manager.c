@@ -1166,11 +1166,6 @@ manager_perhaps_lock (GsmManager *manager)
 static void
 manager_attempt_hibernate (GsmManager *manager)
 {
-#ifdef HAVE_UPOWER
-        gboolean  can_hibernate;
-        GError   *error;
-        gboolean  ret;
-#endif
 #ifdef HAVE_SYSTEMD
         if (LOGIND_RUNNING()) {
 
@@ -1184,18 +1179,17 @@ manager_attempt_hibernate (GsmManager *manager)
                 gsm_systemd_attempt_hibernate (systemd);
         }
 #endif
-#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER)
+#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER_HIBERNATE_SUSPEND)
         else {
 #endif
-#ifdef HAVE_UPOWER
-        can_hibernate = up_client_get_can_hibernate (manager->priv->up_client);
+#ifdef HAVE_UPOWER_HIBERNATE_SUSPEND
+        gboolean can_hibernate = up_client_get_can_hibernate (manager->priv->up_client);
         if (can_hibernate) {
-
                 /* lock the screen before we suspend */
                 manager_perhaps_lock (manager);
 
-                error = NULL;
-                ret = up_client_hibernate_sync (manager->priv->up_client, NULL, &error);
+                GError *error = NULL;
+                gboolean ret = up_client_hibernate_sync (manager->priv->up_client, NULL, &error);
                 if (!ret) {
                         g_warning ("Unexpected hibernate failure: %s",
                                    error->message);
@@ -1203,7 +1197,7 @@ manager_attempt_hibernate (GsmManager *manager)
                 }
         }
 #endif
-#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER)
+#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER_HIBERNATE_SUSPEND)
         }
 #endif
 }
@@ -1211,11 +1205,6 @@ manager_attempt_hibernate (GsmManager *manager)
 static void
 manager_attempt_suspend (GsmManager *manager)
 {
-#ifdef HAVE_UPOWER
-        gboolean  can_suspend;
-        GError   *error;
-        gboolean  ret;
-#endif
 #ifdef HAVE_SYSTEMD
         if (LOGIND_RUNNING()) {
 
@@ -1229,18 +1218,17 @@ manager_attempt_suspend (GsmManager *manager)
                 gsm_systemd_attempt_suspend (systemd);
         }
 #endif
-#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER)
+#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER_HIBERNATE_SUSPEND)
         else {
 #endif
-#ifdef HAVE_UPOWER
-        can_suspend = up_client_get_can_suspend (manager->priv->up_client);
+#ifdef HAVE_UPOWER_HIBERNATE_SUSPEND
+        gboolean can_suspend = up_client_get_can_suspend (manager->priv->up_client);
         if (can_suspend) {
-
                 /* lock the screen before we suspend */
                 manager_perhaps_lock (manager);
 
-                error = NULL;
-                ret = up_client_suspend_sync (manager->priv->up_client, NULL, &error);
+                GError *error = NULL;
+                gboolean ret = up_client_suspend_sync (manager->priv->up_client, NULL, &error);
                 if (!ret) {
                         g_warning ("Unexpected suspend failure: %s",
                                    error->message);
@@ -1248,7 +1236,7 @@ manager_attempt_suspend (GsmManager *manager)
                 }
         }
 #endif
-#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER)
+#if defined(HAVE_SYSTEMD) && defined(HAVE_UPOWER_HIBERNATE_SUSPEND)
         }
 #endif
 }
@@ -2137,7 +2125,7 @@ _handle_client_end_session_response (GsmManager *manager,
 
         manager->priv->query_clients = g_slist_remove (manager->priv->query_clients, client);
 
-        if (! is_ok && !manager->priv->logout_mode != GSM_MANAGER_LOGOUT_MODE_FORCE) {
+        if (! is_ok && manager->priv->logout_mode != GSM_MANAGER_LOGOUT_MODE_FORCE) {
                 guint         cookie;
                 GsmInhibitor *inhibitor;
                 char         *app_id;
