@@ -1,4 +1,4 @@
-AC_INIT([mate-session-manager], [1.16.0], [http://www.mate-desktop.org/])
+AC_INIT([mate-session-manager], [1.17.1], [http://www.mate-desktop.org/])
 AC_CONFIG_SRCDIR([mate-session])
 AC_CONFIG_HEADERS([config.h])
 
@@ -243,12 +243,18 @@ fi
 AC_SUBST(EXECINFO_LIBS)
 
 dnl ====================================================================
-dnl Check for newish X interface
+dnl Check for X transport interface - allows to disable ICE Transports
+dnl See also https://bugzilla.gnome.org/show_bug.cgi?id=725100
 dnl ====================================================================
-oCFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $X_CFLAGS"
-AC_CHECK_HEADERS(X11/Xtrans/Xtrans.h)
-CFLAGS="$oCFLAGS"
+AC_ARG_WITH([xtrans],
+	    [AS_HELP_STRING([--without-xtrans],
+			   [Build without xtrans support (results in ICE listening on remote TCP ports)])],
+	    [],
+	    [with_xtrans=yes])
+AS_IF([test "$with_xtrans" != "no"],
+      [PKG_CHECK_MODULES(XTRANS, xtrans,
+      [AC_DEFINE(HAVE_XTRANS, 1, [Have the X Transport library])])])
+AC_SUBST(HAVE_XTRANS)
 
 dnl ====================================================================
 dnl Code for checking whether IPv6 is enabled on the system....
